@@ -1,5 +1,4 @@
-﻿using System.Xml.Linq;
-using DbcViewer.Core.Models;
+﻿using DbcViewer.Core.Models;
 
 namespace DbcViewer.Core
 {

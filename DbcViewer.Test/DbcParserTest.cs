@@ -1,9 +1,4 @@
 ﻿using DbcViewer.Core;
-using DbcViewer.Core.Models;
-using System;
-using System.IO;
-using System.Linq;
-using Xunit;
 
 namespace DbcViewer.Test
 {
