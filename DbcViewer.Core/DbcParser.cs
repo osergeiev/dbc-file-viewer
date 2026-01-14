@@ -1,4 +1,5 @@
-﻿using DbcViewer.Core.Models;
+﻿using System.Xml.Linq;
+using DbcViewer.Core.Models;
 
 namespace DbcViewer.Core
 {
@@ -13,12 +14,22 @@ namespace DbcViewer.Core
                 Signal? currentSignal = null;
                 Dictionary<int, Message> messagesById = new Dictionary<int, Message>();
                 string? line;
-
                 while ((line = reader.ReadLine()) != null)
                 {
-                    line = line.Trim();
+                    line = line.TrimStart();
 
-                    if (line.StartsWith("BO_ "))
+                    if (line.StartsWith("BU_:"))
+                    {
+                        var nodes = line.Substring(line.IndexOf(':') + 1)
+                                        .Split(' ', StringSplitOptions.RemoveEmptyEntries);
+
+                        foreach (var node in nodes)
+                        {
+                            network.Nodes.Add(node);
+                            Console.WriteLine(node);
+                        }
+                    }
+                    else if (line.StartsWith("BO_ "))
                     {
                         var parts = line.Split(new[] { ' ', ':' }, StringSplitOptions.RemoveEmptyEntries);
 

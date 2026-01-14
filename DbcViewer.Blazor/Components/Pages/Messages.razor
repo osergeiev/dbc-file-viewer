@@ -41,6 +41,21 @@
            @bind:event="oninput" />
 </div>
 
+@if (network?.Nodes?.Any() == true)
+{
+    <div class="mb-3">
+        <h4>Network Nodes (@network.Nodes.Count)</h4>
+        <div class="card">
+            <div class="card-body">
+                @foreach (var node in network.Nodes)
+                {
+                    <span class="badge bg-secondary me-1 mb-1">@node</span>
+                }
+            </div>
+        </div>
+    </div>
+}
+
 @if (network?.Messages?.Any() == true)
 {
     <div class="row">
