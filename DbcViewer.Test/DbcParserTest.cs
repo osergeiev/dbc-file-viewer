@@ -1,47 +1,59 @@
 ﻿using DbcViewer.Core;
+using DbcViewer.Core.Models;
+using System;
+using System.IO;
+using System.Linq;
+using Xunit;
 
 namespace DbcViewer.Test
 {
     public class DbcParserTests
     {
         [Fact]
-        public void Parse_ShouldParseMessageSignalAndSignalAttribute()
+        public void Parse_ShouldParseMessageSignalAndSignalAttributes()
         {
             string dbcContent = @"
-            BO_ 100 ExampleMessage: 8 ECU
-             SG_ Speed : 0|16@1+ (0.01,0) [0|250] ""km/h"" ECU
-
-            BA_ ""GenSigComment"" SG_ 100 Speed ""Vehicle speed signal"" ;
-            ";
+                                BO_ 100 ExampleMessage: 8 ECU
+                                 SG_ Speed : 0|16@1+ (0.01,0) [0|250] ""km/h"" ECU
+                                BA_ ""GenSigComment"" SG_ 100 Speed ""Vehicle speed signal"" ;
+                                BA_ ""Factor"" SG_ 100 Speed 0.01 ;
+                                ";
 
             string tempFile = Path.GetTempFileName();
-            File.WriteAllText(tempFile, dbcContent);
+            try
+            {
+                File.WriteAllText(tempFile, dbcContent);
 
-            var parser = new DbcParser();
+                var parser = new DbcParser();
+                var network = parser.Parse(tempFile);
 
-            var network = parser.Parse(tempFile);
+                Assert.NotNull(network);
+                Assert.Single(network.Messages);
 
-            File.Delete(tempFile);
+                var message = network.Messages.First();
+                Assert.Equal(100, message.Id);
+                Assert.Equal("ExampleMessage", message.Name);
+                Assert.Single(message.Signals);
 
-            Assert.NotNull(network);
-            Assert.Single(network.Messages);
+                var signal = message.Signals.First();
+                Assert.Equal("Speed", signal.Name);
+                Assert.Equal(0, signal.StartBit);
+                Assert.Equal(16, signal.Length);
+                Assert.Equal(0.01, signal.Factor);
+                Assert.Equal(0, signal.Offset);
+                Assert.Equal("km/h", signal.Unit);
 
-            var message = network.Messages.First();
-            Assert.Equal(100, message.Id);
-            Assert.Equal("ExampleMessage", message.Name);
-            Assert.Single(message.Signals);
+                Assert.Equal(2, signal.Attributes.Count);
 
-            var signal = message.Signals.First();
-            Assert.Equal("Speed", signal.Name);
-            Assert.Equal(0, signal.StartBit);
-            Assert.Equal(16, signal.Length);
-            Assert.Equal(0.01, signal.Factor);
-            Assert.Equal("km/h", signal.Unit);
-
-            Assert.Single(signal.Attributes);
-            var attribute = signal.Attributes.First();
-            Assert.Equal("GenSigComment", attribute.Name);
-            Assert.Equal("Vehicle speed signal", attribute.Value);
+                var stringAttr = signal.Attributes.First(a => a.Name == "GenSigComment");
+                Assert.Equal("Vehicle speed signal", stringAttr.Value);
+                var numericAttr = signal.Attributes.First(a => a.Name == "Factor");
+                Assert.Equal("0.01", numericAttr.Value);
+            }
+            finally
+            {
+                File.Delete(tempFile);
+            }
         }
     }
 }

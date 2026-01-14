@@ -97,9 +97,18 @@ namespace DbcViewer.Core
                         int messageId = int.Parse(parts[1]);
                         string signalName = parts[2];
 
-                        int valueStart = line.IndexOf('"', secondQuote + 1);
-                        int valueEnd = line.IndexOf('"', valueStart + 1);
-                        string value = line.Substring(valueStart + 1, valueEnd - valueStart - 1);
+                        string value;
+                        int valueIndex = remainder.IndexOf(parts[3]);
+                        if (parts[3].StartsWith("\""))
+                        {
+                            int vStart = remainder.IndexOf('"', valueIndex);
+                            int vEnd = remainder.IndexOf('"', vStart + 1);
+                            value = remainder.Substring(vStart + 1, vEnd - vStart - 1);
+                        }
+                        else
+                        {
+                            value = parts[3];
+                        }
 
                         if (messagesById.TryGetValue(messageId, out Message? message))
                         {
