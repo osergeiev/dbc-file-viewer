@@ -1,0 +1,229 @@
+﻿@page "/"
+@rendermode InteractiveServer
+@using DbcViewer.Core
+@using DbcViewer.Core.Models
+@using Microsoft.AspNetCore.Components.Forms
+@inject IDbcParser DbcParser
+@implements IDisposable
+
+<PageTitle>DBC Messages</PageTitle>
+
+<h3>DBC Messages Viewer</h3>
+
+<div class="mb-3">
+    <label for="fileInput" class="form-label">Load DBC File:</label>
+    <div class="input-group">
+        <InputFile id="fileInput"
+                   class="form-control"
+                   OnChange="OnFileSelected"
+                   accept=".dbc" />
+        <button class="btn btn-primary" @onclick="LoadFile">Load File</button>
+    </div>
+    @if (!string.IsNullOrEmpty(FileName))
+    {
+        <div class="mt-2">
+            <small class="text-muted">Loaded: @FileName</small>
+        </div>
+    }
+    @if (!string.IsNullOrEmpty(ErrorMessage))
+    {
+        <div class="alert alert-danger mt-2">
+            @ErrorMessage
+        </div>
+    }
+</div>
+
+<div class="mb-2">
+    <input type="text"
+           class="form-control"
+           placeholder="Search messages..."
+           @bind="messageSearch"
+           @bind:event="oninput" />
+</div>
+
+@if (network?.Messages?.Any() == true)
+{
+    <div class="row">
+        <div class="col-md-6">
+            <h4>Messages (@network.Messages.Count)</h4>
+            <div class="table-responsive">
+                <table class="table table-hover table-striped">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Name</th>
+                            <th>Length</th>
+                            <th>Transmitter</th>
+                            <th>Signals</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var message in FilteredMessages)
+                        {
+                            <tr @onclick="() => SelectMessage(message)"
+                                class="@(selectedMessage?.Id == message.Id ? "table-primary" : "")"
+                                style="cursor: pointer;">
+                                <td>@message.Id (0x@(message.Id.ToString("X")))</td>
+                                <td>@message.Name</td>
+                                <td>@message.Length bytes</td>
+                                <td>@message.Transmitter</td>
+                                <td>@message.Signals.Count</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            @if (selectedMessage != null)
+            {
+                <h4>Signals for Message: @selectedMessage.Name</h4>
+                <div class="card mb-3">
+                    <div class="card-header">
+                        <strong>Message Details:</strong> ID: @selectedMessage.Id,
+                        Length: @selectedMessage.Length bytes,
+                        Transmitter: @selectedMessage.Transmitter
+                    </div>
+                </div>
+
+                @if (selectedMessage.Signals?.Any() == true)
+                {
+                    <div class="table-responsive">
+                        <table class="table table-sm table-bordered">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Start Bit</th>
+                                    <th>Length</th>
+                                    <th>Factor</th>
+                                    <th>Offset</th>
+                                    <th>Unit</th>
+                                    <th>Attributes</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var signal in selectedMessage.Signals)
+                                {
+                                    <tr>
+                                        <td><strong>@signal.Name</strong></td>
+                                        <td>@signal.StartBit</td>
+                                        <td>@signal.Length bits</td>
+                                        <td>@signal.Factor</td>
+                                        <td>@signal.Offset</td>
+                                        <td>@signal.Unit</td>
+                                        <td>
+                                            @if (signal.Attributes?.Any() == true)
+                                            {
+                                                <ul class="list-unstyled mb-0">
+                                                    @foreach (var attr in signal.Attributes)
+                                                    {
+                                                        <li><small>@attr.Name: @attr.Value</small></li>
+                                                    }
+                                                </ul>
+                                            }
+                                            else
+                                            {
+                                                <span class="text-muted">None</span>
+                                            }
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+                else
+                {
+                    <div class="alert alert-info">
+                        No signals found for this message.
+                    </div>
+                }
+            }
+            else
+            {
+                <div class="alert alert-secondary">
+                    Select a message from the table to view its signals.
+                </div>
+            }
+        </div>
+    </div>
+}
+else if (isFileLoaded)
+{
+    <div class="alert alert-warning">
+        No messages found in the DBC file.
+    </div>
+}
+else
+{
+    <div class="alert alert-info">
+        Please load a DBC file to view messages and signals.
+    </div>
+}
+
+@code {
+    private Network? network;
+    private Message? selectedMessage;
+    private string? FileName { get; set; }
+    private string? ErrorMessage { get; set; }
+    private bool isFileLoaded = false;
+    private string messageSearch = "";
+    private IEnumerable<Message> FilteredMessages =>
+    string.IsNullOrWhiteSpace(messageSearch)
+        ? network?.Messages ?? Enumerable.Empty<Message>()
+        : network.Messages.Where(m => m.Name.Contains(messageSearch, StringComparison.OrdinalIgnoreCase));
+    private IBrowserFile? selectedFile;
+
+    private void OnFileSelected(InputFileChangeEventArgs e)
+    {
+        selectedFile = e.File;
+        FileName = selectedFile.Name;
+        ErrorMessage = null;
+    }
+
+    private async Task LoadFile()
+    {
+        if (selectedFile == null)
+        {
+            ErrorMessage = "Please select a file first.";
+            return;
+        }
+
+        try
+        {
+            ErrorMessage = null;
+
+            var tempFilePath = Path.GetTempFileName();
+
+            await using (var stream = selectedFile.OpenReadStream())
+            await using (var fileStream = File.Create(tempFilePath))
+            {
+                await stream.CopyToAsync(fileStream);
+            }
+
+            network = DbcParser.Parse(tempFilePath);
+
+            isFileLoaded = true;
+            selectedMessage = null;
+
+            try { File.Delete(tempFilePath); } catch { }
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"Error loading file: {ex.Message}";
+            network = null;
+            selectedMessage = null;
+            isFileLoaded = false;
+        }
+    }
+
+    private void SelectMessage(Message message)
+    {
+        selectedMessage = message;
+    }
+
+    public void Dispose()
+    {
+    }
+}
