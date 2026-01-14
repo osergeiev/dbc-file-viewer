@@ -15,6 +15,7 @@ foreach (var message in network.Messages)
         Console.WriteLine($"    StartBit: {signal.StartBit}, Length: {signal.Length}");
         Console.WriteLine($"    Factor: {signal.Factor}, Offset: {signal.Offset}");
         Console.WriteLine($"    Unit: {(string.IsNullOrEmpty(signal.Unit) ? "(none)" : signal.Unit)}");
+        Console.WriteLine($"    Receiever: {(string.IsNullOrEmpty(signal.Unit) ? "(none)" : signal.Receiver)}");
 
         if (signal.Attributes.Count > 0)
         {

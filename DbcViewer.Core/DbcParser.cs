@@ -62,6 +62,8 @@ namespace DbcViewer.Core
                         string unit = (parts.Length > 5) ? parts[5].Trim('"') : string.Empty;
                         unit = unit == "" ? string.Empty : unit;
 
+                        string receiver = parts[6];
+
                         currentSignal = new Signal
                         {
                             Name = name,
@@ -69,7 +71,8 @@ namespace DbcViewer.Core
                             Length = length,
                             Factor = factor,
                             Offset = offset,
-                            Unit = unit
+                            Unit = unit,
+                            Receiver = receiver
                         };
 
                         currentMessage.Signals.Add(currentSignal);

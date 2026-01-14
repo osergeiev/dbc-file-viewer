@@ -63,7 +63,7 @@
                             <tr @onclick="() => SelectMessage(message)"
                                 class="@(selectedMessage?.Id == message.Id ? "table-primary" : "")"
                                 style="cursor: pointer;">
-                                <td>@message.Id (0x@(message.Id.ToString("X")))</td>
+                                <td>@message.Id</td>
                                 <td>@message.Name</td>
                                 <td>@message.Length bytes</td>
                                 <td>@message.Transmitter</td>
@@ -99,6 +99,7 @@
                                     <th>Factor</th>
                                     <th>Offset</th>
                                     <th>Unit</th>
+                                    <th>Receiver</th>
                                     <th>Attributes</th>
                                 </tr>
                             </thead>
@@ -112,6 +113,7 @@
                                         <td>@signal.Factor</td>
                                         <td>@signal.Offset</td>
                                         <td>@signal.Unit</td>
+                                        <td>@signal.Receiver</td>
                                         <td>
                                             @if (signal.Attributes?.Any() == true)
                                             {
