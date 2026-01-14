@@ -4,7 +4,6 @@
 @using DbcViewer.Core.Models
 @using Microsoft.AspNetCore.Components.Forms
 @inject IDbcParser DbcParser
-@implements IDisposable
 
 <PageTitle>DBC Messages</PageTitle>
 
@@ -238,9 +237,5 @@ else
     private void SelectMessage(Message message)
     {
         selectedMessage = message;
-    }
-
-    public void Dispose()
-    {
     }
 }
